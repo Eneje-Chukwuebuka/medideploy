@@ -1,0 +1,40 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - staging
+      - main
+
+jobs:
+  test:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8
+
+      - name: Lint with flake8
+        run: |
+          flake8 app/ tests/ --max-line-length=88 --ignore=E501
+
+      - name: Run tests
+        run: |
+          python -m pytest tests/ -v
+
+      - name: Confirm health endpoint exists
+        run: |
+          python -c "from app.main import app; client = app.test_client(); r = client.get('/health'); assert r.status_code == 200, 'Health check failed'"
