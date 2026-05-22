@@ -1,0 +1,52 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-prod:
+    name: Deploy to Production Environment
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Load production environment
+        run: |
+          cat environments/prod.env >> $GITHUB_ENV
+
+      - name: Run full test suite
+        run: |
+          python -m pytest tests/ -v
+
+      - name: Confirm environment
+        run: |
+          python -c "
+          import os
+          env = os.getenv('APP_ENV', 'not set')
+          print(f'Deploying to environment: {env}')
+          assert env == 'production', f'Wrong environment: {env}'
+          "
+
+      - name: Simulate deployment
+        run: |
+          echo "Deploying to PRODUCTION environment..."
+          echo "App version: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Running final health checks..."
+          echo "PRODUCTION deployment complete"
